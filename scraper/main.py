@@ -4,6 +4,7 @@ import csv
 import requests
 from bs4 import BeautifulSoup
 from datetime import date
+from tqdm import tqdm
 
 # open data/playersURLs.csv
 urls = []
@@ -21,7 +22,7 @@ columns = ["URL", "Name", "Full name", "Date of birth", "Age",
     "Scraping timestamp"]
 
 # for each in urls, access the url and scrape the data
-for url in urls:
+for url in tqdm(urls):
     # open the url
     page = requests.get(url)
 
@@ -35,6 +36,9 @@ for url in urls:
 
     # create object
     object = soup.find(class_="infobox vcard")
+
+    if object is None:
+        continue
     
     # find all rows in object table
     rows = object.find_all("tr")
@@ -43,6 +47,9 @@ for url in urls:
 
     
     national_team = False
+    
+    # if insert is False, it means this is not a football player
+    insert = True
 
     # remove first \n
     def remove_newline(text: str):
@@ -68,18 +75,36 @@ for url in urls:
                     national_team = True
             continue
 
+        # if there is label "Sport", it means this is not a football player
+        if label == "Sport":
+            insert = False
+            break
+        
+        if len(label) == 0:
+            continue    
+        
         if label == "Date of birth":
             # split string into date and age, format: "\n (1996-05-12) 12 May 1996 (age 34)"
             data = data.split(" (age")
-            data[1] = data[1][1:-1]
-            data[0] = data[0].split(") ")[1]
-            attributes[label] = data[0]
-            attributes["Age"] = data[1]
+            if len(data) == 2:
+                data[1] = data[1][1:-1]
+                data[0] = data[0].split(") ")[1]
+                attributes[label] = data[0]
+                attributes["Age"] = data[1]
+            else:
+                # only date of birth is given
+                attributes[label] = data[0]
+
         elif label == "Place of birth":
-            # split string into place and country, format: "Birmingham, England"
-            data = data.split(", ")
-            attributes[label] = remove_newline(data[0])
-            attributes["Country of birth"] = data[1]
+            # split string into place and country, format: "Birmingham, England" and possibly "Wilton, Cork, Ireland"
+            # split by latest comma
+            data = data.rsplit(", ", 1)
+            if len(data) == 2:
+                attributes[label] = remove_newline(data[0])
+                attributes["Country of birth"] = data[1]
+            else:
+                # only country of birth is given
+                attributes[label] = remove_newline(data[0])
         # last digit is minus sign implies current club or national team
         elif label[-1] == "–":
             # infobox-data-a is current club or national team
@@ -105,8 +130,11 @@ for url in urls:
         
 
     from pprint import pprint
-    pprint(attributes)
-    break
+    #pprint(attributes)
+    
+    if insert:
+        # insert the data into the database
+        pass
     
 
     # insert the data into the database
