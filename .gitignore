@@ -1,2 +1,2 @@
-database/database.ini
+config/database.ini
 *.pyc

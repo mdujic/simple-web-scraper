@@ -6,7 +6,7 @@ def connect():
     conn = None
     try:
         # read connection parameters
-        params = config()
+        params = config.config()
 
         # connect to the PostgreSQL server
         print('Connecting to the PostgreSQL database...')
