@@ -3,3 +3,4 @@ requests
 urllib3
 bs4
 tqdm
+psycopg2
