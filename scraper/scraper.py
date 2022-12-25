@@ -6,8 +6,7 @@ from bs4 import BeautifulSoup
 from datetime import date
 from tqdm import tqdm
 from datetime import date, datetime, time
-from backports.datetime_fromisoformat import MonkeyPatch
-MonkeyPatch.patch_fromisoformat()
+
 
 # generator which reads data from data/playersURLs.csv and yields row
 def read_csv():

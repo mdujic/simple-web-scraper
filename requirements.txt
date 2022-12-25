@@ -4,4 +4,3 @@ urllib3
 bs4
 tqdm
 psycopg2
-backports-datetime-fromisoformat
