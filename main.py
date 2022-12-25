@@ -9,14 +9,11 @@ def main():
         return
 
 
-    for item in scraper.scraper():
+    for i, item in enumerate(scraper.scraper()):
+        
         # push each item to database
-    #     "URL", "Name", "Full name", "Date of birth", "Age",
-    # "Place of birth", "Country of birth", "Position(s)", "Current club",
-    # "National team", "No. appearances current club", "No. goals current club", 
-    # "Scraping timestamp"
-        item
         column_names = {
+            "ID": "id",
             "URL": "url", 
             "Name": "name", 
             "Full name": "full_name", 
@@ -31,7 +28,13 @@ def main():
             "No. goals current club": "goals_curr_club", 
             "Scraping timestamp": "scraping_timestamp"
         }
-        
+
+        item["ID"] = str(i)
+
+        # if there is no "Age", we set it to -1
+        if "Age" not in item.keys():
+            item["Age"] = -1
+
         for key in scraper.COLUMNS:
             if key not in item.keys():
                 item[key] = ""
@@ -39,9 +42,6 @@ def main():
 
         sql = "INSERT INTO players (" + ", ".join([column_names[key] for key in scraper.COLUMNS]) + ") VALUES (" + ", ".join(["%s" for key in scraper.COLUMNS]) + ")"
         val = tuple([item[key] for key in scraper.COLUMNS])
-        print(sql)
-        print(val)
-
 
         cur.execute(sql, val)
         conn.commit()

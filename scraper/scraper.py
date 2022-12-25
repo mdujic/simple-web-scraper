@@ -5,6 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import date
 from tqdm import tqdm
+from datetime import date, datetime, time
+from backports.datetime_fromisoformat import MonkeyPatch
+MonkeyPatch.patch_fromisoformat()
 
 # generator which reads data from data/playersURLs.csv and yields row
 def read_csv():
@@ -15,7 +18,7 @@ def read_csv():
 
 
 
-COLUMNS = ["URL", "Name", "Full name", "Date of birth", "Age",
+COLUMNS = ["ID", "URL", "Name", "Full name", "Date of birth", "Age",
     "Place of birth", "Country of birth", "Position(s)", "Current club",
     "National team", "No. appearances current club", "No. goals current club", 
     "Scraping timestamp"]
@@ -84,8 +87,8 @@ def scraper():
                         national_team = True
                 continue
 
-            # if there is label "Sport", it means this is not a football player
-            if label == "Sport":
+            # if there is label "Sport" or "Weight", it means this is not a football player
+            if label == "Sport" or label == "Weight":
                 insert = False
                 break
             
@@ -102,15 +105,15 @@ def scraper():
                     attributes["Age"] = data[1]
                 else:
                     # only date of birth is given
+                    data[0] = remove_newline(data[0])
                     attributes[label] = data[0]
                     # calculate age from date of birth
                     def calculate_age(born):
-                        # convert string to date
-                        born = date.fromisoformat(born)
+                        # convert "28 February 1936" to iso "1936-02-28"
+                        born = datetime.strptime(born, "%d %B %Y")
                         today = date.today()
                         return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-
-                    data[0] = data[0].split(") ")[0]
+                    
                     attributes["Age"] = calculate_age(data[0])
 
             elif label == "Place of birth":
