@@ -41,8 +41,8 @@ def scraper(playerURLs):
     for url in tqdm(read_csv(playerURLs)):
         attributes = {"URL" : url}
     
-        # scraping timestamp is current time of obtaining the data
-        attributes["Scraping timestamp"] = date.today().isoformat()
+        # exact date and time in iso
+        attributes["Scraping timestamp"] = datetime.now().isoformat()
 
         # main scraping object is infobox vcard
         object = infobox_vcard(url)
