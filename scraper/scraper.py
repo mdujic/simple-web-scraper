@@ -9,18 +9,18 @@ from datetime import date, datetime, time
 
 
 # generator which reads data from data/playersURLs.csv and yields row
-def read_csv():
-    with open('data/playersURLs.csv', 'r') as f:
+def read_csv(str):
+    with open(str, 'r') as f:
         reader = csv.reader(f)
         for row in reader:
             yield row[0]
 
 
 
-COLUMNS = ["ID", "URL", "Name", "Full name", "Date of birth", "Age",
+COLUMNS = ["URL", "Player ID", "Name", "Full name", "Date of birth", "Age", "Dead",
     "Place of birth", "Country of birth", "Position(s)", "Current club",
     "National team", "No. appearances current club", "No. goals current club", 
-    "Scraping timestamp"]
+    "No. appearances national team", "No. goals national team", "Scraping timestamp"]
 
 def infobox_vcard(url):
     # open the url
@@ -36,9 +36,9 @@ def infobox_vcard(url):
 
 
 
-def scraper():
+def scraper(playerURLs):
     # for each in urls, access the url and scrape the data
-    for url in tqdm(read_csv()):
+    for url in tqdm(read_csv(playerURLs)):
         attributes = {"URL" : url}
     
         # scraping timestamp is current time of obtaining the data
@@ -94,26 +94,23 @@ def scraper():
             if len(label) == 0:
                 continue    
             
+
             if label == "Date of birth":
                 # split string into date and age, format: "\n (1996-05-12) 12 May 1996 (age 34)"
                 data = data.split(" (age")
                 if len(data) == 2:
+                    # if age is shown, this means person is alive
                     data[1] = data[1][1:-1]
                     data[0] = data[0].split(") ")[0][3:]
                     attributes[label] = data[0]
                     attributes["Age"] = data[1]
+                    attributes["Dead"] = 0
                 else:
-                    # only date of birth is given
+                    # if age is not shown, person is dead
                     data[0] = remove_newline(data[0])
                     attributes[label] = data[0]
-                    # calculate age from date of birth
-                    def calculate_age(born):
-                        # convert "28 February 1936" to iso "1936-02-28"
-                        born = datetime.strptime(born, "%d %B %Y")
-                        today = date.today()
-                        return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-                    
-                    attributes["Age"] = calculate_age(data[0])
+
+                    attributes["Dead"] = 1
 
             elif label == "Place of birth":
                 # split string into place and country, format: "Birmingham, England" and possibly "Wilton, Cork, Ireland"
@@ -132,6 +129,14 @@ def scraper():
                 # if national_team is True, it means we are in the national team
                 if national_team:
                     label = "National team"
+                    # infobox-data-b is number of apps
+                    attributes["No. appearances national team"] = remove_newline(row.find(class_="infobox-data-b").get_text())
+                    # infobox-data-c is number of goals with brackets
+                    goals = row.find(class_="infobox-data-c").get_text()
+                    # remove brackets
+                    goals = goals[2:-1]
+
+                    attributes["No. goals national team"] = goals
                 else:
                     label = "Current club"
 
@@ -149,9 +154,8 @@ def scraper():
                 attributes[label] = remove_newline(data)
             
 
-        from pprint import pprint
-        pprint(attributes)
+        # from pprint import pprint
+        # pprint(attributes)
         
-        # if can be inserted, yield
-        if insert:
-            yield attributes
+        
+        yield attributes, insert
